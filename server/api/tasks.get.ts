@@ -3,7 +3,7 @@ import { join } from "path";
 
 export default defineEventHandler(async () => {
 
-	const filePath = join("C:/Users/RobinGombkötö/Desktop", "tasks.txt");
+	const filePath = join("C:/Users/Fillja/Desktop", "tasks.txt");
 	const fileContent = await fs.readFile(filePath, "utf-8");
 	const tasks = fileContent
 		.split("\n")
