@@ -1,10 +1,10 @@
 import { promises as fs } from "fs";
-import { join } from "path";
+import path from "path";
 
 export default defineEventHandler(async () => {
 
-	const filePath = join("C:/Users/Fillja/Desktop", "tasks.txt");
-	const fileContent = await fs.readFile(filePath, "utf-8");
+	const desktopPath = path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop", "tasks.txt");
+	const fileContent = await fs.readFile(desktopPath, "utf-8");
 	const tasks = fileContent
 		.split("\n")
 		.map(line => line.trim())

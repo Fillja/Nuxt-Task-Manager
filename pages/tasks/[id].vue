@@ -1,23 +1,41 @@
 <script lang="ts" setup>
 import { FetchError } from "ofetch"
+import type { ResponseResult, Task } from "~/shared/types";
 
 const route = useRoute();
 const errorMessage = ref("");
-const { data: task, error, status  } = await useFetch(`/api/tasks/${route.params.id}`, {
+const taskForm = ref<Task>({
+  id: "",
+  title: "",
+});
+
+const { data: task, error, status  } = await useFetch<Task>(`/api/tasks/${route.params.id}`, {
     lazy: true,
+});
+
+watch(task, (newTask) => {
+  if (newTask) {
+    taskForm.value = { ...newTask };
+  }
 });
 
 async function removeTask(taskId: string){
     try{
-        console.log("Removing task with ID:", taskId);
         errorMessage.value = "";
-        const result = await $fetch(`/api/tasks/${taskId}`, {
+
+        const result = await $fetch<ResponseResult>(`/api/tasks/${taskId}`, {
             method: 'DELETE',
         });
-        if(result.success) {
+
+        console.log(result);
+
+        if(result.status === 200) {
             navigateTo({
                 name: 'index',
             });
+        }
+        else{
+            errorMessage.value = result.error || "Unknown error occurred";
         }
     }
     catch(error){
@@ -25,6 +43,23 @@ async function removeTask(taskId: string){
         errorMessage.value = fetchError.statusMessage || "Unknown error occurred";
     }
 
+}
+
+async function updateTask(){
+    try{
+        errorMessage.value = "";
+
+        const result = await $fetch<ResponseResult>(`/api/tasks/${taskForm.value.id}`, {
+            method: "PUT",
+            body: {
+                title: taskForm.value.title,
+            },
+        })
+    }
+    catch(error){
+        const fetchError = error as FetchError;
+        errorMessage.value = fetchError.statusMessage || "Unknown error occurred";
+    }
 }
 </script>
 
@@ -54,4 +89,12 @@ async function removeTask(taskId: string){
             <button @click="removeTask(task.id)">Remove</button>
         </div>
     </article>
+    <form v-if="taskForm" @submit.prevent="updateTask">
+        <input v-model="taskForm.id" hidden>
+        <label>
+            Task title
+            <input :placeholder="task?.title" v-model="taskForm.title">
+        </label>
+        <button>Update</button>
+    </form>
 </template>

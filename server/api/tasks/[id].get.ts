@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { promises as fs } from "fs";
-import { join } from "path";
+import path from "path";
 
 const idParamsSchema = z.object({
     id: z.string()
@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
         }));
     }
     const { id } = taskId;
-    const filePath = join("C:/Users/Fillja/Desktop", "tasks.txt");
-    const fileContent = await fs.readFile(filePath, "utf-8");
+    const desktopPath = path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop", "tasks.txt");
+    const fileContent = await fs.readFile(desktopPath, "utf-8");
     const tasks = fileContent
         .split("\n")
         .map(line => line.trim())

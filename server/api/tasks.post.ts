@@ -3,9 +3,8 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const TaskSchema = z.object({
-	id: z.string().optional(),
-	title: z.string(),
-	done: z.boolean().optional(),
+	id: z.string(),
+	title: z.string()
 });
 
 export default defineEventHandler(async (event) => {

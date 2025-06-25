@@ -1,16 +1,22 @@
-import z from 'zod';
+import z from "zod";
 import path from 'path';
 import { promises as fs } from 'fs';
-import { responseResult } from '~/shared/types';
+import { responseResult } from "~/shared/types";
+
+const TaskSchema = z.object({
+    id: z.string(),
+    title: z.string()
+});
 
 export default defineEventHandler(async (event) => {
 
-    const result = await getValidatedRouterParams(event, z.object({ id: z.string() }).safeParse);
+    const result = await getValidatedRouterParams(event, TaskSchema.safeParse);
 
-    if (!result.success) {
-        return responseResult(400, "Invalid id");
+    if(!result.success){
+        return responseResult(400, "Invalid fields");
     }
-    const { id: taskId } = (await result).data;
+
+    const taskToUpdate = (await result).data;
 
     const desktopPath = path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop", "tasks.txt");
     const fileContent = await fs.readFile(desktopPath, "utf-8");
@@ -27,12 +33,10 @@ export default defineEventHandler(async (event) => {
         })
         .filter(Boolean);
 
-    const taskIndex = tasks.findIndex((task) => task.id === taskId);
-    if (taskIndex === -1) {
+    const currentTask = tasks.find((task) => task.id == taskToUpdate.id);
+    console.log(currentTask);
+
+    if(!currentTask){
         return responseResult(404, "Task not found");
     }
-    tasks.splice(taskIndex, 1);
-
-    await fs.writeFile(desktopPath, tasks.map(t => JSON.stringify(t)).join('\n'), "utf-8");
-    return responseResult(200)
 });
