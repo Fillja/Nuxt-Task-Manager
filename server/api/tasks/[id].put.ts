@@ -1,42 +1,52 @@
+import path from "path";
+import { promises as fs } from "fs";
 import z from "zod";
-import path from 'path';
-import { promises as fs } from 'fs';
 import { responseResult } from "~/shared/types";
 
-const TaskSchema = z.object({
-    id: z.string(),
-    title: z.string()
+const BodySchema = z.object({
+	title: z.string(),
 });
 
 export default defineEventHandler(async (event) => {
+	const id = event.context.params?.id;
 
-    const result = await getValidatedRouterParams(event, TaskSchema.safeParse);
+	if (!id) {
+		return responseResult(400, "Missing task ID in route");
+	}
 
-    if(!result.success){
-        return responseResult(400, "Invalid fields");
-    }
+	const body = await readBody(event);
+	const parsedBody = BodySchema.safeParse(body);
 
-    const taskToUpdate = (await result).data;
+	if (!parsedBody.success) {
+		return responseResult(400, "Invalid request body");
+	}
 
-    const desktopPath = path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop", "tasks.txt");
-    const fileContent = await fs.readFile(desktopPath, "utf-8");
-    const tasks = fileContent
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean)
-        .map(line => {
-            try {
-                return JSON.parse(line);
-            } catch {
-                return null;
-            }
-        })
-        .filter(Boolean);
+	const taskToUpdate = { id, title: parsedBody.data.title };
 
-    const currentTask = tasks.find((task) => task.id == taskToUpdate.id);
-    console.log(currentTask);
+	const desktopPath = path.join(process.env.HOME || process.env.USERPROFILE || "", "Desktop", "tasks.txt");
+	const fileContent = await fs.readFile(desktopPath, "utf-8");
+	const tasks = fileContent
+		.split("\n")
+		.map(line => line.trim())
+		.filter(Boolean)
+		.map((line) => {
+			try {
+				return JSON.parse(line);
+			}
+			catch {
+				return null;
+			}
+		})
+		.filter(Boolean);
 
-    if(!currentTask){
-        return responseResult(404, "Task not found");
-    }
+	const currentTaskIndex = tasks.findIndex(task => task.id == taskToUpdate.id);
+
+	if (currentTaskIndex === -1) {
+		return responseResult(404, "Task not found");
+	}
+
+	tasks.splice(currentTaskIndex, 1, taskToUpdate);
+	await fs.writeFile(desktopPath, tasks.map(task => JSON.stringify(task)).join("\n") + "\n");
+
+	return responseResult(200);
 });

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { FetchError } from "ofetch"
+import type { FetchError } from "ofetch";
+import type { Task } from "~/shared/types";
 
 const errorMessage = ref("");
 const loading = ref(false);
@@ -10,7 +11,7 @@ function generateId() {
 }
 
 async function createTask() {
-	if(!taskName.value.trim()){
+	if (!taskName.value.trim()) {
 		errorMessage.value = "Task is required.";
 		return;
 	}
@@ -27,14 +28,20 @@ async function createTask() {
 				title: taskName.value,
 			},
 		});
-		
-		navigateTo({
-			name: 'tasks-id',
-			params: {
-				id: result.task.id
-			}
-		});
 
+		if (result.status === 200) {
+			const createdTask = result.data as Task;
+
+			navigateTo({
+				name: "tasks-id",
+				params: {
+					id: createdTask.id,
+				},
+			});
+		}
+		else {
+			errorMessage.value = result.error || "Unknown error occured";
+		}
 	}
 	catch (e) {
 		const error = e as FetchError;
@@ -43,17 +50,27 @@ async function createTask() {
 
 	loading.value = false;
 }
-
 </script>
 
 <template>
 	<div>
-		<article v-if="loading" aria-busy />
-		<article class="error" v-if="errorMessage">{{ errorMessage }}</article>
+		<article
+			v-if="loading"
+			aria-busy
+		/>
+		<article
+			v-if="errorMessage"
+			class="error"
+		>
+			{{ errorMessage }}
+		</article>
 		<form @submit.prevent="createTask">
 			<label>
 				Task
-				<input v-model="taskName" name="title">
+				<input
+					v-model="taskName"
+					name="title"
+				>
 			</label>
 			<div class="flex-end">
 				<button>Create</button>
