@@ -38,5 +38,5 @@ export default defineEventHandler(async (event) => {
 
 	await fs.appendFile(desktopPath, JSON.stringify(result.data) + "\n");
 
-	return responseResult(200, "", result.data);
+	return responseResult(201, "", result.data);
 });
